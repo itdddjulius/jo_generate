@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JO_20261113_120643 · Bonsai Studio</title>
+<style>
+:root{color-scheme:dark;--gold:#efc577;--line:#3c3226;--muted:#bfb5a5}*{box-sizing:border-box}body{margin:0;color:#fff9ee;background:#141210;font:16px system-ui,sans-serif}button,input,select{font:inherit;color:inherit}a{color:var(--gold)}button,select,input{background:#221d17;border:1px solid var(--line);border-radius:8px;padding:9px}button{cursor:pointer}button:hover{border-color:var(--gold)}:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.bar{position:fixed;inset-inline:0;z-index:2;background:#171410;padding:10px max(16px,calc((100% - 1120px)/2));display:flex;gap:12px;align-items:center;justify-content:space-between;border:1px solid var(--line)}header{top:0}footer{bottom:0}.brand{color:var(--gold);font-weight:750;letter-spacing:.12em;white-space:nowrap}nav{display:flex;overflow:auto;gap:16px;white-space:nowrap}nav a{font-size:.78rem;text-decoration:none;padding-block:6px}main{max-width:1160px;margin:auto;padding:100px 20px 80px}.title{font:clamp(2.8rem,7vw,5.8rem)/1 Georgia,serif;letter-spacing:-.06em;margin:0 0 10px}p{line-height:1.6;color:var(--muted)}.work{display:grid;grid-template-columns:minmax(0,1fr) 245px;gap:18px;align-items:start}.stage{border:1px solid var(--line);border-radius:15px;overflow:hidden;background:#181510}.stage canvas{display:block;width:100%;height:auto}.tools{display:grid;gap:10px;border:1px solid var(--line);padding:16px;border-radius:15px;background:#1a1713}.tools input{width:100%;min-width:0}.tools label{display:grid;gap:5px}.primary{color:#1e1509;background:var(--gold);font-weight:750}dialog{width:min(700px,92vw);max-height:78vh;padding:0;color:#fff9ee;background:#1a1713;border:1px solid var(--gold);border-radius:13px}dialog::backdrop{background:#0009}.panel-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1a1713;padding:12px;border-bottom:1px solid var(--line)}.panel-head h2,.doc h3,.doc h4{margin:0;color:var(--gold)}.doc{padding:16px 20px}.doc iframe{display:block;width:100%;height:52vh;border:0;background:white;margin-top:12px}dialog.pinned{position:fixed;inset:auto 12px 57px auto;margin:0;max-height:52vh;width:min(500px,92vw);z-index:3}@media(max-width:760px){header{flex-wrap:wrap;gap:4px}header nav{order:3;flex-basis:100%}main{padding-top:112px}.work{grid-template-columns:1fr}footer small{display:none}}
+</style>
+<header class="bar"><span class="brand" title="JO_20261113_120643">JO / BONSAI</span><nav aria-label="Documentation"></nav><select id="locale" aria-label="Language"><option value="en">English</option><option value="ar">العربية</option><option value="fr">Français</option><option value="es">Español</option></select></header>
+<main>
+<h1 class="title" data-i="title"></h1><p data-i="intro"></p>
+<section class="work"><div class="stage"><canvas id="tree" width="1200" height="800" role="img"></canvas></div>
+<form class="tools" id="tools"><label><span data-i="seed"></span><input id="seed" type="number" required min="0" max="4294967295" value="20261113"></label><label><span data-i="density"></span><input id="density" type="range" min="2" max="8" value="5"></label><button class="primary" data-i="grow"></button><button id="random" type="button" data-i="random"></button><button id="png" type="button" data-i="png"></button></form>
+</section>
+</main>
+<footer class="bar"><nav aria-label="Footer documentation"></nav><small>Another Website by Julius Olatokunbo</small></footer>
+<dialog id="panel"><div class="panel-head"><h2 id="heading"></h2><div><button id="pin"></button> <button id="close"></button></div></div><div id="doc" class="doc"></div></dialog>
+<script id="docs" type="application/json">{"readme": "# Bonsai Studio\nOpen dist/index.html in a modern browser. Choose a seed and branching density, grow the tree, then download a PNG. The same settings reproduce the same tree.\n## Upstream and changes\nJohn Allbritten’s cbonsai generates configurable bonsai in a C and ncurses terminal. Its upstream README covers package installation, source builds, and static or animated growth. See UPSTREAM-README.md or https://gitlab.com/jallbrit/cbonsai.\nBonsai Studio adapts the movement distributions in cbonsai.c for trunks, left and right shoots, and foliage. Browser rendering uses Canvas, a seeded generator and a bounded branch model. Seeds are specific to this edition. The adapted source is in dist/index.html and is released under GPL-3.0-or-later. See LICENSE.\n", "guide": "# User guide\nChoose a seed and set branching density. Select Grow to animate the tree. Select Random seed to try a different tree. Download PNG saves the full-grown image, even during animation.\nUse the language menu to choose English, Arabic, French, or Spanish. Documentation is in English. The Contact panel requires internet access.\n", "function": "# Function guide\nThe seeded generator repeats the same growth sequence for the same seed and density. A trunk creates alternating shoots and shorter leaf-bearing twigs. The canvas fits each completed drawing before animation. PNG export renders the finished tree at 1200 by 800 pixels.\n", "tests": "# Tests\nAutomated checks cover repeatable seeds, changed seeds and density, bounded growth, and the contents of the release archive. The Contact panel points to the original website and provides a direct link.\n", "news": "# Release notes\n## 13 November 2026\nFirst browser edition with seeded bonsai, animated growth, PNG export, and four interface languages.\n"}</script>
+<script>
+/* GPL-3.0-or-later. Movement distributions adapted from John Allbritten's cbonsai.c.
+   Upstream: https://gitlab.com/jallbrit/cbonsai . See accompanying LICENSE. */
+function growTree(seed,density){
+  let state=seed>>>0;
+  const roll=n=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return Math.floor(state/4294967296*n);};
+  const wide=[-2,-1,-1,-1,0,0,1,1,1,2];
+  const sideways=[2,2,1,1,1,1,0,0,0,-1];
+  const dying=[-3,-2,-2,-1,-1,-1,0,0,0,1,1,1,2,2,3];
+  const marks=[];
+  let direction=1;
+  function branch(x,y,kind,life){
+    for(let age=0;age<life;age++){
+      let dx,dy;
+      const left=life-age;
+      if(kind===0){
+        dx=age<12?wide[roll(10)]:roll(3)-1;
+        dy=age<2?0:(age<12?-(age%2===0):-(roll(10)>2));
+      }else if(Math.abs(kind)===1){
+        dx=kind*sideways[roll(10)];
+        const v=roll(10);dy=v<2?-1:v<8?0:1;
+      }else{
+        dx=dying[roll(15)];
+        const v=roll(10);dy=v<2?-1:v<9?0:1;
+      }
+      const nx=x+dx,ny=y+dy;
+      const leaf=kind===2||left<3;
+      marks.push({x,y,nx,ny,leaf,width:kind===0?Math.max(.65,left/11):Math.max(.23,left/18)});
+      x=nx;y=ny;
+      if(kind===0&&age>4&&left>5&&age%(11-density)===0){
+        branch(x,y,direction,Math.max(4,Math.floor(left*.62)));
+        direction*=-1;
+      }else if(Math.abs(kind)===1&&(left===2||age%4===2)){
+        branch(x,y,2,2+roll(4));
+      }
+    }
+  }
+  branch(0,0,0,40);
+  return marks;
+}
+</script>
+<script>
+'use strict';
+const words='title intro seed density grow random png readme guide function tests news contact pin unpin close external pdf'.split(' ');
+const language={
+en:'Bonsai Studio|Grow a seeded bonsai and save it as a PNG.|Seed|Branching density|Grow|Random seed|Download PNG|README|USER GUIDE|FUNCT GUIDE|TESTS|NEWS|CONTACT|Pin|Unpin|Close|Open contact in a new tab|PDF guide',
+ar:'استوديو بونساي|أنمِ شجرة بونساي برقم بذرة واحفظها كصورة PNG.|رقم البذرة|كثافة الفروع|إنماء|بذرة عشوائية|تنزيل PNG|نبذة|دليل المستخدم|دليل الوظائف|الاختبارات|الأخبار|اتصل بنا|تثبيت|إلغاء التثبيت|إغلاق|فتح صفحة الاتصال في علامة تبويب جديدة|دليل PDF',
+fr:'Atelier bonsaï|Faites pousser un bonsaï à partir d’une graine et enregistrez-le en PNG.|Graine|Densité des branches|Faire pousser|Graine aléatoire|Télécharger le PNG|README|MODE D’EMPLOI|FONCTIONS|TESTS|NOUVEAUTÉS|CONTACT|Épingler|Désépingler|Fermer|Ouvrir le contact dans un nouvel onglet|Guide PDF',
+es:'Estudio bonsái|Cultiva un bonsái a partir de una semilla y guárdalo como PNG.|Semilla|Densidad de ramas|Cultivar|Semilla aleatoria|Descargar PNG|README|GUÍA DE USO|FUNCIONES|PRUEBAS|NOVEDADES|CONTACTO|Fijar|Desfijar|Cerrar|Abrir contacto en una pestaña nueva|Guía PDF'
+};
+const $=id=>document.getElementById(id);
+const t=key=>language[$('locale').value].split('|')[words.indexOf(key)];
+const docs=JSON.parse($('docs').textContent);
+const canvas=$('tree'),ctx=canvas.getContext('2d'),panel=$('panel');
+let marks,frame,active,seed;
+function paint(context,count){
+  const bg=context.createLinearGradient(0,0,0,800);
+  bg.addColorStop(0,'#292015');bg.addColorStop(1,'#131210');
+  context.fillStyle=bg;context.fillRect(0,0,1200,800);
+  const xs=marks.map(m=>m.nx).concat(0),ys=marks.map(m=>m.ny).concat(0);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const scale=Math.min(940/Math.max(1,maxX-minX),570/Math.max(1,maxY-minY));
+  const tx=600-(minX+maxX)*scale/2,ty=95-minY*scale;
+  context.lineCap='round';
+  for(let i=0;i<count;i++){
+    const m=marks[i],x=tx+m.nx*scale,y=ty+m.ny*scale;
+    if(m.leaf){
+      context.fillStyle=['#dfab52','#f2ce81','#ad7733'][i%3];
+      context.beginPath();context.ellipse(x,y,scale*.55,scale*.22,i%3-1,0,Math.PI*2);context.fill();
+    }else{
+      context.strokeStyle=m.width>1?'#936135':'#be884a';
+      context.lineWidth=Math.max(1.1,m.width*scale*.33);
+      context.beginPath();context.moveTo(tx+m.x*scale,ty+m.y*scale);context.lineTo(x,y);context.stroke();
+    }
+  }
+  context.fillStyle='#b08048';context.fillRect(tx-62,ty+4,124,12);
+  context.fillStyle='#65482e';context.beginPath();context.moveTo(tx-59,ty+16);context.lineTo(tx+59,ty+16);context.lineTo(tx+45,ty+48);context.lineTo(tx-45,ty+48);context.closePath();context.fill();
+}
+function start(animate){
+  cancelAnimationFrame(frame);
+  seed=Number($('seed').value);marks=growTree(seed,Number($('density').value));
+  if(!animate||matchMedia('(prefers-reduced-motion: reduce)').matches){paint(ctx,marks.length);return;}
+  let begin;
+  function tick(time){
+    begin??=time;
+    const count=Math.min(marks.length,Math.floor((time-begin)/6)+1);
+    paint(ctx,count);
+    if(count<marks.length)frame=requestAnimationFrame(tick);
+  }
+  frame=requestAnimationFrame(tick);
+}
+function link(parent,text,href,external=false){
+  const a=document.createElement('a');a.textContent=text;a.href=href;
+  if(external){a.target='_blank';a.rel='noopener noreferrer';}
+  parent.append(a);return a;
+}
+function show(){
+  $('heading').textContent=t(active);$('pin').textContent=t(panel.classList.contains('pinned')?'unpin':'pin');$('close').textContent=t('close');
+  const doc=$('doc');doc.replaceChildren();
+  if(active==='contact'){
+    const url='https://raiiarcomio.com/contact2';
+    link(doc,t('external'),url,true);
+    const iframe=document.createElement('iframe');iframe.title=t('contact');iframe.src=url;doc.append(iframe);return;
+  }
+  const body=document.createElement('div');body.lang='en';body.dir='ltr';
+  for(const line of docs[active].split('\n').filter(Boolean)){
+    const p=document.createElement(line.startsWith('## ')?'h4':line.startsWith('# ')?'h3':'p');
+    for(const part of line.replace(/^#{1,2} /,'').split(/(https?:\/\/[^\s]+[^\s.])/g)){
+      if(part.startsWith('https://'))link(p,part,part,true);else p.append(part);
+    }
+    body.append(p);
+  }
+  doc.append(body);
+  if(active==='guide')link(doc,t('pdf'),'Guide.pdf',true);
+}
+function localize(){
+  const lang=$('locale').value;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+  document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t(el.dataset.i));canvas.setAttribute('aria-label',t('title'));
+  document.querySelectorAll('nav').forEach(nav=>{
+    nav.replaceChildren();
+    for(const key of ['readme','guide','function','tests','news','contact']){
+      link(nav,t(key),'#'+key).onclick=e=>{e.preventDefault();active=key;show();if(!panel.open)panel.showModal();};
+    }
+  });
+  if(panel.open)show();
+}
+$('locale').onchange=localize;
+$('tools').onsubmit=e=>{e.preventDefault();start(true);};
+$('random').onclick=()=>{$('seed').value=crypto.getRandomValues(new Uint32Array(1))[0];start(true);};
+$('png').onclick=()=>{
+  const output=document.createElement('canvas');output.width=1200;output.height=800;
+  paint(output.getContext('2d'),marks.length);
+  const filename='bonsai-'+seed+'.png';
+  output.toBlob(blob=>{
+    if(!blob)return;
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+};
+$('close').onclick=()=>{panel.close();panel.classList.remove('pinned');};
+$('pin').onclick=()=>{
+  const pinned=panel.classList.toggle('pinned');panel.close();
+  if(pinned)panel.show();else panel.showModal();
+  $('pin').textContent=t(pinned?'unpin':'pin');
+};
+panel.onkeydown=e=>{if(e.key==='Escape'&&panel.classList.contains('pinned'))$('close').click();};
+localize();start(false);
+</script>
+</html>

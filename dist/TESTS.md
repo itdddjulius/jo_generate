@@ -1,0 +1,2 @@
+# QA and verification
+Run npm test with Node.js 22+ and unzip. Fixture tests exercise all four feed adapters, limits, rank validation, model catalogue, HTML escaping and ZIP integrity. The fixtures do not impersonate a live provider response. The hosted studio needs the user's Groq key to validate account entitlements and perform live inference. The static-host regression test simulates feed failures and verifies that all four dated fallback groups still reach the Groq ranking step, returning 40 validated entries.
